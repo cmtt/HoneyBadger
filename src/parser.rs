@@ -374,6 +374,20 @@ impl<'a> Parser<'a> {
         };
 
         'right: loop {
+            // EXPERIMENTAL: fix ASI
+            match self.lookahead() {
+                Some(&ParenOn)                |
+                Some(&BracketOn)              |
+                Some(&Operator(Division))     |
+                Some(&Operator(Addition))     |
+                Some(&Operator(Substraction)) => {
+                    if self.allow_asi {
+                        break 'right;
+                    }
+                },
+                _ => {}
+            }
+
             let rbp = match self.lookahead() {
                 Some(&Operator(ref op)) => op.binding_power(false),
                 _                       => 0,
