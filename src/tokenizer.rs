@@ -2,7 +2,7 @@ use std::str;
 use lexicon::Token;
 use lexicon::Token::*;
 use lexicon::ReservedKind::*;
-use grammar::SmartString;
+// use grammar::SmartString;
 use grammar::OperatorType::*;
 use grammar::VariableDeclarationKind::*;
 use grammar::LiteralValue;
@@ -165,7 +165,7 @@ impl<'a> Tokenizer<'a> {
         ch
     }
 
-    fn read_string(&mut self, first: u8) -> SmartString {
+    fn read_string(&mut self, first: u8) -> String {
         let start = self.index - 1;
 
         loop {
@@ -180,7 +180,9 @@ impl<'a> Tokenizer<'a> {
             }
         }
 
-        SmartString::in_situ(start, self.index)
+        unsafe {
+            self.source.slice_unchecked(start, self.index)
+        }.to_owned()
     }
 
     fn read_binary(&mut self) -> LiteralValue {
@@ -249,7 +251,9 @@ impl<'a> Tokenizer<'a> {
             }
         }
 
-        LiteralValue::LiteralFloat(SmartString::in_situ(start, self.index))
+        LiteralValue::LiteralFloat(unsafe {
+            self.source.slice_unchecked(start, self.index)
+        }.to_owned())
     }
 
     fn read_number(&mut self, first: u8) -> LiteralValue {
@@ -325,9 +329,11 @@ impl<'a> Tokenizer<'a> {
             self.bump();
         }
 
-        let ident = SmartString::in_situ(start, self.index);
+        let ident = unsafe {
+            self.source.slice_unchecked(start, self.index)
+        };
 
-        match ident.as_str(self.source) {
+        match ident {
             "new"        => Operator(New),
             "typeof"     => Operator(Typeof),
             "delete"     => Operator(Delete),
@@ -375,7 +381,7 @@ impl<'a> Tokenizer<'a> {
             "interface"  => Reserved(Interface),
             "private"    => Reserved(Private),
             "public"     => Reserved(Public),
-            _            => Identifier(ident),
+            _            => Identifier(ident.to_owned()),
         }
     }
 
@@ -552,7 +558,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     #[inline]
-    pub fn expect_identifier(&mut self) -> SmartString {
+    pub fn expect_identifier(&mut self) -> String {
         if self.token.is_some() {
             return match self.token.take() {
                 Some(Identifier(ident)) => ident,

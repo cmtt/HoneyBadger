@@ -460,7 +460,7 @@ impl<'a> Parser<'a> {
         statement!(self, self.variable_declaration(kind))
     }
 
-    fn labeled_or_expression_statement(&mut self, label: SmartString) -> Statement {
+    fn labeled_or_expression_statement(&mut self, label: String) -> Statement {
         if self.tokenizer.allow_byte(b':') {
             Statement::Labeled {
                 label: label,
@@ -574,9 +574,8 @@ impl<'a> Parser<'a> {
             match self.consume() {
                 Operator(In)      => return self.for_in_statement(init),
                 Identifier(ident) => {
-                    let slice = ident.as_str(self.tokenizer.source);
-                    if slice != "of" {
-                        panic!("Unexpected identifier {}", slice);
+                    if ident != "of" {
+                        panic!("Unexpected identifier {}", ident);
                     }
                     return self.for_of_statement(init.unwrap());
                 },
@@ -684,13 +683,12 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn class_member(&mut self, name: SmartString, is_static: bool) -> ClassMember {
+    fn class_member(&mut self, name: String, is_static: bool) -> ClassMember {
         match self.tokenizer.peek() {
             Some(&ParenOn) => {
                 self.tokenizer.next();
-                let slice = name.as_str(self.tokenizer.source);
 
-                if !is_static && slice == "constructor" {
+                if !is_static && name == "constructor" {
                     ClassMember::Constructor {
                         params: self.parameter_list(),
                         body: self.block_body(),

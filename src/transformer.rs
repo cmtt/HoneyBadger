@@ -23,6 +23,13 @@ impl<T> Take for Vec<T> {
     }
 }
 
+impl Take for String {
+    #[inline]
+    fn take(&mut self) -> Self {
+        mem::replace(self, String::new())
+    }
+}
+
 impl Take for Expression {
     #[inline]
     fn take(&mut self) -> Self {
@@ -159,7 +166,7 @@ impl Transformable for Expression {
                     kind: VariableDeclarationKind::Var,
                     declarators: vec![
                         VariableDeclarator {
-                            name: SmartString::from_str("___"),
+                            name: String::from("___"),
                             value: Some(Expression::Object(literal)),
                         }
                     ]
@@ -279,8 +286,8 @@ impl Transformable for ObjectMember {
                 }
 
                 ObjectMember::Literal {
-                    key: *key,
-                    value: Expression::Identifier(*key),
+                    key: key.clone(),
+                    value: Expression::Identifier(key.take()),
                 }
             },
 
@@ -302,7 +309,7 @@ impl Transformable for ObjectMember {
             },
 
             ObjectMember::Method {
-                ref name,
+                ref mut name,
                 ref mut params,
                 ref mut body,
             } => {
@@ -315,9 +322,9 @@ impl Transformable for ObjectMember {
                 }
 
                 ObjectMember::Literal {
-                    key: *name,
+                    key: name.clone(),
                     value: Expression::Function {
-                        name: Some(*name),
+                        name: Some(name.take()),
                         params: params.take(),
                         body: body.take(),
                     }
